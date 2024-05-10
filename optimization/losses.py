@@ -13,14 +13,14 @@ def gmof(x, sigma):
     sigma_squared = sigma ** 2
     return (sigma_squared * x_squared) / (sigma_squared + x_squared)
 
-    
-def camera_fitting_loss(model_keypoints, rotation, camera_t, focal_length, camera_center, 
+
+def camera_fitting_loss(model_keypoints, rotation, camera_t, focal_length, camera_center,
                         keypoints_2d, keypoints_conf, distortion=None):
 
     # Project model keypoints
     projected_keypoints = perspective_projection(model_keypoints, rotation, camera_t,
                                                 focal_length, camera_center, distortion)
-    
+
     # Disable Wing Tips
     keypoints_conf = keypoints_conf.detach().clone()
     keypoints_conf[:, 5:7] = 0
@@ -36,8 +36,8 @@ def camera_fitting_loss(model_keypoints, rotation, camera_t, focal_length, camer
 
 
 def body_fitting_loss(model_keypoints, rotation, camera_t, focal_length, camera_center,
-                      keypoints_2d, keypoints_conf, body_pose, bone_length, sigma=50, 
-                      lim_weight = 1, prior_weight=1, bone_weight=1, 
+                      keypoints_2d, keypoints_conf, body_pose, bone_length, sigma=50,
+                      lim_weight = 1, prior_weight=1, bone_weight=1,
                       distortion=None, pose_init=None, bone_init=None):
 
     # Project model keypoints
@@ -70,19 +70,19 @@ def body_fitting_loss(model_keypoints, rotation, camera_t, focal_length, camera_
     bone_loss = (bone_length-max_bone).clamp(0, float("Inf")) + (min_bone-bone_length).clamp(0, float("Inf"))
     bone_loss = bone_weight * bone_loss
 
-    total_loss = (reprojection_loss.sum(dim=-1) 
-                  + lim_loss.sum() 
-                  + prior_loss.sum() 
+    total_loss = (reprojection_loss.sum(dim=-1)
+                  + lim_loss.sum()
+                  + prior_loss.sum()
                   + bone_loss.sum())
-    
+
     return total_loss.sum()
 
 
-def kpts_fitting_loss(model_keypoints, focal_length, camera_center, keypoints_2d, keypoints_conf, 
+def kpts_fitting_loss(model_keypoints, focal_length, camera_center, keypoints_2d, keypoints_conf,
                     body_pose, bone_length, prior_weight=1, pose_init=None, bone_init=None, sigma=100):
 
     device = body_pose.device
-    
+
     # Project model keypoints
     projected_keypoints = perspective_projection(model_keypoints, None, None,
                                                  focal_length, camera_center)
@@ -94,9 +94,9 @@ def kpts_fitting_loss(model_keypoints, focal_length, camera_center, keypoints_2d
 
     # If provided pose/bone initialization, constraint objective from deviation from it
     if pose_init==None or bone_init==None:
-        total_loss = reprojection_loss.sum(dim=-1) 
+        total_loss = reprojection_loss.sum(dim=-1)
 
-    else:    
+    else:
         init_loss = (body_pose - pose_init).abs().sum() + (bone_length - bone_init).abs().sum()
         init_loss = init_loss * prior_weight
         total_loss = reprojection_loss.sum(dim=-1) + init_loss.sum()
@@ -109,7 +109,7 @@ def mask_fitting_loss(proj_masks, masks, mask_weight):
     # L1 mask loss
     total_loss = F.smooth_l1_loss(proj_masks, masks, reduction='none').sum(dim=[1,2])
     total_loss = mask_weight * total_loss
-    
+
     return total_loss.sum()
 
 
@@ -121,7 +121,3 @@ def prior_loss(p, mean, cov_in, weight):
     dis = weight * torch.diag(dis).sum()
 
     return dis
-
-
-
-

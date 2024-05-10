@@ -25,8 +25,8 @@ class Renderer:
             alphaMode='OPAQUE',
             baseColorFactor=(0.8, 0.3, 0.3, 1.0))
 
-
         mesh = trimesh.Trimesh(vertices, self.faces)
+        trimesh.exchange.export.export_mesh(mesh, 'bird_mesh.obj', file_type='obj')
         rot = trimesh.transformations.rotation_matrix(
             np.radians(180), [1, 0, 0])
         mesh.apply_transform(rot)
@@ -61,6 +61,7 @@ class Renderer:
         valid_mask = (rend_depth>0)[:,:,None]
         output_img = (color[:, :, :3] * valid_mask +
                   (1 - valid_mask) * image)
+
         return output_img, rend_depth
 
 
@@ -93,5 +94,5 @@ class Silhouette_Renderer:
 
         rend_depth = self.renderer.render(scene, flags=pyrender.RenderFlags.DEPTH_ONLY)
         silhouette = rend_depth > 0
-        
+
         return silhouette

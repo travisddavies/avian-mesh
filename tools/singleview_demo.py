@@ -13,10 +13,12 @@ from datasets import Cowbird_Dataset
 from keypoint_detection import load_detector, postprocess
 from utils.vis_bird import render_sample
 
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(current_dir)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--root', default='data/cowbird/images', help='Path to image folder')
-parser.add_argument('--annfile', default='data/cowbird/annotations/instance_test.json', help='Path to annotation')
+parser.add_argument('--root', default=f'{parent_dir}/data/cowbird/images', help='Path to image folder')
+parser.add_argument('--annfile', default=f'{parent_dir}/data/cowbird/annotations/instance_test.json', help='Path to annotation')
 parser.add_argument('--index', type=int,  default=0, help='Index in the dataset for example reconstruction')
 parser.add_argument('--use_mask', action='store_true', help='Whether masks are used in optimization')
 parser.add_argument('--outdir', type=str, default='examples', help='Folder for output images')
@@ -35,11 +37,11 @@ if __name__ == '__main__':
         if device == 'cpu':
             print('Warning: using mask during optimization without GPU acceleration is very slow!')
         silhouette_renderer = base_renderer(size=256, focal=2167, device=device)
-        optimizer = OptimizeSV(num_iters=100, prior_weight=1, mask_weight=1, 
+        optimizer = OptimizeSV(num_iters=100, prior_weight=1, mask_weight=1,
                                use_mask=True, renderer=silhouette_renderer, device=device)
         print('Using mask for optimization')
     else:
-        optimizer = OptimizeSV(num_iters=100, prior_weight=1, mask_weight=1, 
+        optimizer = OptimizeSV(num_iters=100, prior_weight=1, mask_weight=1,
                                use_mask=False, device=device)
 
     # Load dataset
@@ -65,6 +67,7 @@ if __name__ == '__main__':
 
         # Regression
         kpts_in = pred_kpts.reshape(pred_kpts.shape[0], -1)
+
         mask_in = pred_mask
         p_est, b_est = regressor(kpts_in, mask_in)
         pose, tran, bone = regressor.postprocess(p_est, b_est)
@@ -73,8 +76,8 @@ if __name__ == '__main__':
     ignored = pred_kpts[:, :, 2] < 0.3
     opt_kpts = pred_kpts.clone()
     opt_kpts[ignored] = 0
-    pose_op, bone_op, tran_op, model_mesh = optimizer(pose, bone, tran, 
-                                          focal_length=2167, camera_center=128, 
+    pose_op, bone_op, tran_op, model_mesh = optimizer(pose, bone, tran,
+                                          focal_length=2167, camera_center=128,
                                           keypoints=opt_kpts, masks=mask_in.squeeze(1))
 
 
@@ -91,10 +94,4 @@ if __name__ == '__main__':
         img_save[:, 256*0:256*(0+1), :] = img_out
         img_save[:, 256*1:256*(1+1), :] = img_opt
 
-        plt.imsave(args.outdir+'/{:02d}.png'.format(i), img_save) 
-
-
-
-
-
-
+        plt.imsave(args.outdir+'/{:02d}.png'.format(i), img_save)

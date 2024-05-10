@@ -49,18 +49,18 @@ class OptimizeSV():
             Fast enough for now as it is used only once.
         """
         batch_size = len(pose)
-        
+
         pose = pose.to('cpu')
         pose = pose.detach().clone()
         pose = pose.reshape(batch_size, -1, 3, 3)
         new_pose = torch.zeros([batch_size, pose.shape[1]*3]).float()
-        
+
         for i in range(batch_size):
             for j in range(pose.shape[1]):
                 R = pose[i, j]
                 aa, _ = cv2.Rodrigues(R.numpy())
                 new_pose[i, 3*j:3*(j+1)] = torch.tensor(aa).squeeze()
-            
+
         return new_pose
 
     def render_silhouette(self, vertices):
@@ -76,7 +76,7 @@ class OptimizeSV():
 
         return silhouette
 
-    def __call__(self, init_pose, init_bone, init_t, focal_length=2167, camera_center=128, 
+    def __call__(self, init_pose, init_bone, init_t, focal_length=2167, camera_center=128,
                 keypoints=None, masks=None):
         """Perform single view reconstruction
         Input:
@@ -120,7 +120,7 @@ class OptimizeSV():
             global_txyz = self.transform_t(global_t)
             model_keypoints = bird_output['keypoints'] + global_txyz.unsqueeze(1)
 
-            loss = camera_fitting_loss(model_keypoints, None, None, focal_length, camera_center, 
+            loss = camera_fitting_loss(model_keypoints, None, None, focal_length, camera_center,
                                        keypoints_2d, keypoints_conf)
 
             body_optimizer.zero_grad()
@@ -145,7 +145,7 @@ class OptimizeSV():
             global_txyz = self.transform_t(global_t)
             model_keypoints = bird_output['keypoints'] + global_txyz.unsqueeze(1)
 
-            loss = kpts_fitting_loss(model_keypoints, focal_length, camera_center, keypoints_2d, keypoints_conf, 
+            loss = kpts_fitting_loss(model_keypoints, focal_length, camera_center, keypoints_2d, keypoints_conf,
                                 body_pose, bone_length, prior_weight=self.prior_weight)
 
             loss_p = prior_loss(body_pose, self.p_m, self.p_cov_in, self.prior_weight)
@@ -173,7 +173,7 @@ class OptimizeSV():
                 model_keypoints = bird_output['keypoints'] + global_txyz.unsqueeze(1)
                 model_mesh = bird_output['vertices'] + global_txyz.unsqueeze(1)
 
-                loss = kpts_fitting_loss(model_keypoints, focal_length, camera_center, keypoints_2d, keypoints_conf, 
+                loss = kpts_fitting_loss(model_keypoints, focal_length, camera_center, keypoints_2d, keypoints_conf,
                                     body_pose, bone_length, prior_weight=self.prior_weight,
                                     pose_init=pose_init, bone_init=bone_init)
 
@@ -188,6 +188,7 @@ class OptimizeSV():
                 loss.backward()
                 body_optimizer.step()
 
+                print('Loss: {str(loss)}')
 
         # Output
         bird_output = self.bird(global_pose=global_orient,
@@ -200,7 +201,5 @@ class OptimizeSV():
         global_t = global_t.detach().to('cpu')
         model_mesh = bird_output['vertices'] + global_txyz.unsqueeze(1)
         model_mesh = model_mesh.detach().to('cpu')
-        
+
         return pose, bone, global_t, model_mesh
-
-

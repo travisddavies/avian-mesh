@@ -18,10 +18,10 @@ class LBS():
         self.n_joints = J.shape[1]
         self.h_joints = F.pad(J.unsqueeze(-1), [0,0,0,1], value=0)
         self.kin_tree = torch.cat([J[:,[0], :], J[:, 1:]-J[:, parents[1:]]], dim=1).unsqueeze(-1)
-        
+
         self.parents = parents
         self.weights = weights[None].float()
-        
+
     def __call__(self, V, pose, bone, scale, to_rotmats=True):
         batch_size = len(V)
         device = pose.device
@@ -42,9 +42,6 @@ class LBS():
         T_ = self.weights @ T_rel.view(batch_size, self.n_joints, -1)
         T_ = T_.view(batch_size, -1, 4, 4)
         V = T_ @ V
+        V = F.pad(V.unsqueeze(-1), [0,0,0,1], value=1)
 
         return V[:, :, :3, 0]
-
-
-
-

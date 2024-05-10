@@ -326,7 +326,7 @@ class PoseHighResolutionNet(nn.Module):
             self.stage4_cfg, num_channels, multi_scale_output=True)
 
         ##### modification to output keypoints and mask prediction #####
-        last_inp_channels = np.int(np.sum(pre_stage_channels))
+        last_inp_channels = np.int32(np.sum(pre_stage_channels))
 
         self.final_layer = nn.Sequential(
             nn.Conv2d(
@@ -344,7 +344,7 @@ class PoseHighResolutionNet(nn.Module):
                 stride=1,
                 padding=1 if extra.FINAL_CONV_KERNEL == 3 else 0)
         )
-        
+
         self.pretrained_layers = cfg['MODEL']['EXTRA']['PRETRAINED_LAYERS']
 
     def _make_transition_layer(
@@ -371,6 +371,9 @@ class PoseHighResolutionNet(nn.Module):
                     transition_layers.append(None)
             else:
                 conv3x3s = []
+                # If i is greater than num_branches_pre, then we will
+                # then iterate from 0 to the equivalent of the difference between
+                # i and num_branches_pre
                 for j in range(i+1-num_branches_pre):
                     inchannels = num_channels_pre_layer[-1]
                     outchannels = num_channels_cur_layer[i] \

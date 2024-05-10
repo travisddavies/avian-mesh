@@ -51,5 +51,3 @@ def postprocess(output, device=None):
     pred_kpts = pred_kpts.to(device)
 
     return pred_kpts, pred_mask
-
-
