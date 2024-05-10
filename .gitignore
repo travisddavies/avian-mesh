@@ -12,3 +12,6 @@ __pycache__/
 ## Large Files ##
 models/detector.pth
 keypoint_detection/model_best.pth
+examples/
+render_bird.py
+tools/examples/
